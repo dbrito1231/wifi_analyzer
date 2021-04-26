@@ -7,9 +7,14 @@ import pandas as pd
 from pcap_cleaner import pCleaner
 
 
+cleaner = pCleaner()
+
 def write_raw_dataframe_to_parquet(dataframe, parquet_store, fl, tp):
     # parquet_filename = parquet_store + '\\' + fl + '_' + str(tp) + '.parquet'
+    # TODO: add in cleaner stats to df
     try:
+        print("")
+        print("")
         # table = pa.Table.from_pandas(dataframe)
         # pq.write_table(table, parquet_filename)
     except:
@@ -37,7 +42,8 @@ def get_raw_dataframe_by_id(folder_path, level, tp):
                             error_bad_lines=False,
                             warn_bad_lines=False,
                             engine='python')
-    dataframe = pCleaner(dataframe).return_cleanDf()
+    global cleaner
+    dataframe = cleaner.return_cleanDf(dataframe)
     return dataframe
 
 

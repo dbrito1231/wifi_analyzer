@@ -1,11 +1,26 @@
 import numpy as np
 import pandas as pd
 
+from numpy import isnan
+
+class pStats:
+    def __init__(self):
+        self.totalBeacons = None
+        self.validBeacons = None
+
+    # TODO: return channel dict with df
+    def get_unique_channels(self, packet_dataframe):
+        unique_channels_raw = packet_dataframe['wlan_radio.channel'].unique()
+        unique_channels = [x for x in unique_channels_raw if (isnan(x) != True)]
+        return unique_channels
+
 
 class pCleaner:
 
-    def __init__(self, dataframe):
-        self.df_rawCount = dataframe.shape[0]
+    def __init__(self):
+        pass
+
+    def return_cleanDf(self,dataframe):
         self.df = self.clean_subtype(dataframe)
         self.df = self.clean_type(self.df)
         self.df = self.clean_channel(self.df)
@@ -14,8 +29,6 @@ class pCleaner:
         self.df = self.clean_noise(self.df)
         self.df = self.clean_frame_len(self.df)
         self.df = self.add_dBm_conversion_to_mW(self.df)
-
-    def return_cleanDf(self):
         return self.df
 
     def convert_to_dBm(self, mw_array):
@@ -73,11 +86,6 @@ class pCleaner:
         print('bandwidth under 40')
         return df
 
-    def clean_channel_bandwidth_above_40(self, df):
-        df = df[df['wlan.vht.op.channelwidth'].str.len() > 4]
-        df['wlan.vht.op.channelwidth'] = df['wlan.vht.op.channelwidth'].apply(lambda x: int(x, base=16)).fillna(0)
-        print('bandwidth over 40')
-        return df
 
     def add_dBm_conversion_to_mW(self, df):
         df['rssi(mW)'] = df['radiotap.dbm_antsignal'].apply(self.convert_to_mW)
