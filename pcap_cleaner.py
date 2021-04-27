@@ -13,14 +13,20 @@ class pStats:
         unique_channels = [x for x in channels if (isnan(x) != True)]
         return unique_channels
 
+    def getSSIDs(self, dataframe):
+        return dataframe["wlan.ssid"].unique()
+
     def getChannelDf(self, dataframe, ch):
         return dataframe.query(f'`wlan_radio.channel` == {ch}')
 
     def getBeacons(self, dataframe):
         return dataframe.query('`wlan.fc.type_subtype` == "8"')
 
-    def getTypeFrames(self, dataframe, fcValue):
-        return dataframe.query(f'`wlan.fc.type` == "{fcValue}"')
+    def getTypeFrames(self, dataframe, pktType):
+        types = {"mgmt": 0,
+                 "ctrl": 1,
+                 "data": 2}
+        return dataframe.query(f'`wlan.fc.type` == "{types[pktType]}"')
 
     def splitGoodBadPackets(self, dataframe):
         good = dataframe.query(f'`wlan.fcs.status` == "1"')

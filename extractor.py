@@ -10,25 +10,104 @@ from pcap_cleaner import pCleaner, pStats
 cleaner = pCleaner()
 stats = pStats()
 
-def write_raw_dataframe_to_parquet(dataframe, parquet_store, fl, tp):
-    # parquet_filename = parquet_store + '\\' + fl + '_' + str(tp) + '.parquet'
-    # TODO: add in cleaner stats to df
-    #   and also split packets by the three types
-    try:
 
-        chanLst = pStats.getChannels(dataframe)
-        chanDict = dict(map(stats.getChannelDf, dataframe, chanLst))
-        beacons = stats.getBeacons(dataframe)
-        packet_types = ["mgmt","data","ctrl"]
+def createSSIDData(dataframe):
+    data = dataframe[
+        ["frame.time_delta",
+            "frame.number",
+            "wlan.fcs.status",
+            "wlan.ssid",
+            "wlan_radio.channel",
+            "radiotap.dbm_antsignal",
+            "radiotap.dbm_antnoise",
+            "wlan.fc.type",
+            "wlan.fc.type_subtype",
+            "wlan_radio.data_rate",
+            "wlan.fc.retry",
+            "wlan.qbss.cu"]]
+    dtypes = {
+        "frame.time_delta": "float",
+        "frame.number": "int",
+        "wlan.fcs.status": "int",
+        "wlan.ssid": "str",
+        "wlan_radio.channel": "int",
+        "radiotap.dbm_antsignal": "int",
+        "radiotap.dbm_antnoise": "int",
+        "wlan.fc.type": "int",
+        "wlan.fc.type_subtype": "int",
+        "wlan_radio.data_rate": "int",
+        "wlan.fc.retry": "int",
+        "wlan.qbss.cu": "int"}
+    data = data.astype(dtypes)
+    return data
 
-        print("")
-        print("")
-        # table = pa.Table.from_pandas(dataframe)
-        # pq.write_table(table, parquet_filename)
-    except:
-        dataframe["frame.time_relative"] = pd.to_numeric(dataframe["frame.time_relative"])
-        print(fl, tp)
-        print(dataframe["frame.time_relative"].dtype)
+
+def cleanDataframeData(dataframe):
+    data = dataframe[
+        ["frame.number",
+         "frame.time_delta",
+         "wlan_radio.channel",
+         "wlan.fc.ds",
+         "wlan.ta",
+         "wlan.ra",
+         "radiotap.dbm_antsignal",
+         "radiotap.dbm_antnoise",
+         "wlan_radio.data_rate",
+         "data.len",
+         "wlan_radio.duration",
+         "wlan.fc.retry",
+         "wlan.fcs.status"]]
+    dtypes = {"floor": "str",
+              "location": "str",
+              "frame.number": "int",
+              "wlan_radio.channel": 'int',
+              "wlan.fc.ds": "int16",
+              "wlan.ta": "str",
+              "wlan.ra": "str",
+              "radiotap.dbm_antsignal": "int",
+              "radiotap.dbm_antnoise": "int",
+              "wlan_radio.data_rate": "int",
+              "data.len": "int",
+              "wlan_radio.duration": "int",
+              "frame.time_delta": "float",
+              "wlan.fc.retry": "int",
+              "wlan.fcs.status": "int"}
+    data = data.astype(dtypes)
+    return data
+
+# TODO: work out table entries for database
+#  ssids, channels, beacons, association, authentication
+
+# TODO: create channel df that contains rssi, noise, utilization
+# TODO: create SSID df that contains rssi, noise, utilization, channel, client counts
+
+
+
+def writeToDB(dataframe, parquet_store, fl, tp):
+    raw_data = dataframe.copy()
+    raw_data["floor"] = fl
+    raw_data["location"] = tp
+    ssids = stats.getSSIDs(dataframe)
+    chanLst = pStats.getChannels(dataframe)
+
+    chanDict = dict(map(stats.getChannelDf, dataframe, chanLst))
+    beacons = stats.getBeacons(dataframe)
+    packet_types = ["mgmt", "data", "ctrl"]
+    pTypeDict = dict(map(stats.getTypeFrames, dataframe, packet_types))
+
+    # try:
+    #     ssids = stats.getSSIDs(dataframe)
+    #     chanLst = pStats.getChannels(dataframe)
+    #     chanDict = dict(map(stats.getChannelDf, dataframe, chanLst))
+    #     beacons = stats.getBeacons(dataframe)
+    #     packet_types = ["mgmt", "data", "ctrl"]
+    #     pTypeDict = dict(map(stats.getTypeFrames, dataframe, packet_types))
+    #     print("")
+    #     print("")
+    # except:
+    #     dataframe["frame.time_relative"] = pd.to_numeric(dataframe["frame.time_relative"])
+    #     print(fl, tp)
+    #     print(dataframe["frame.time_relative"].dtype)
 
 
 def get_raw_dataframe_by_id(folder_path, level, tp):
