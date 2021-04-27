@@ -50,7 +50,7 @@ def get_raw_dataframe_by_id(folder_path, level, tp):
                             error_bad_lines=False,
                             warn_bad_lines=False,
                             engine='python')
-    global cleaner
+
     dataframe = cleaner.return_cleanDf(dataframe)
     return dataframe
 

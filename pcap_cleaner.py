@@ -43,7 +43,6 @@ class pCleaner:
         self.df = self.clean_signal(self.df)
         self.df = self.clean_noise(self.df)
         self.df = self.clean_frame_len(self.df)
-        self.df = self.add_dBm_conversion_to_mW(self.df)
         return self.df
 
     def convert_to_dBm(self, mw_array):
