@@ -79,7 +79,6 @@ def cleanDataframeData(dataframe):
 #  ssids, channels, beacons, association, authentication
 
 # TODO: create channel df that contains rssi, noise, utilization
-# TODO: create SSID df that contains rssi, noise, utilization, channel, client counts
 
 
 
