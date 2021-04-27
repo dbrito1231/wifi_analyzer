@@ -5,14 +5,29 @@ from numpy import isnan
 
 class pStats:
     def __init__(self):
-        self.totalBeacons = None
-        self.validBeacons = None
+        pass
 
     # TODO: return channel dict with df
-    def get_unique_channels(self, packet_dataframe):
-        unique_channels_raw = packet_dataframe['wlan_radio.channel'].unique()
-        unique_channels = [x for x in unique_channels_raw if (isnan(x) != True)]
+    def getChannels(self, packet_dataframe):
+        channels = packet_dataframe['wlan_radio.channel'].unique()
+        unique_channels = [x for x in channels if (isnan(x) != True)]
         return unique_channels
+
+    def getChannelDf(self, dataframe, ch):
+        return dataframe.query(f'`wlan_radio.channel` == {ch}')
+
+    def getBeacons(self, dataframe):
+        return dataframe.query('`wlan.fc.type_subtype` == "8"')
+
+    def getTypeFrames(self, dataframe, fcValue):
+        return dataframe.query(f'`wlan.fc.type` == "{fcValue}"')
+
+    def splitGoodBadPackets(self, dataframe):
+        good = dataframe.query(f'`wlan.fcs.status` == "1"')
+        bad = dataframe.query(f'`wlan.fcs.status` == "0"')
+        return good, bad
+
+
 
 
 class pCleaner:
@@ -55,7 +70,7 @@ class pCleaner:
     def clean_channel(self, df):
         df = df[df['wlan_radio.channel'].str.len() < 4]
         df = df.astype({'wlan_radio.channel': 'int'})
-        df = df[df['wlan_radio.channel'] >= 1]
+        df = df.query('`wlan_radio.channel` >= "1"')
         return df
 
     def clean_counts(self, df):

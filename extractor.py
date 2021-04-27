@@ -4,15 +4,23 @@ from glob import glob
 from concurrent.futures import ProcessPoolExecutor
 from subprocess import Popen
 import pandas as pd
-from pcap_cleaner import pCleaner
+from pcap_cleaner import pCleaner, pStats
 
 
 cleaner = pCleaner()
+stats = pStats()
 
 def write_raw_dataframe_to_parquet(dataframe, parquet_store, fl, tp):
     # parquet_filename = parquet_store + '\\' + fl + '_' + str(tp) + '.parquet'
     # TODO: add in cleaner stats to df
+    #   and also split packets by the three types
     try:
+
+        chanLst = pStats.getChannels(dataframe)
+        chanDict = dict(map(stats.getChannelDf, dataframe, chanLst))
+        beacons = stats.getBeacons(dataframe)
+        packet_types = ["mgmt","data","ctrl"]
+
         print("")
         print("")
         # table = pa.Table.from_pandas(dataframe)
