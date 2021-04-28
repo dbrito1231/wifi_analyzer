@@ -48,31 +48,17 @@ def cln_pkt_df_data(dataframe):
 
 # TODO: create channel df that contains rssi, noise, utilization
 
+
 def writeToDB(dataframe, parquet_store, fl, tp):
     raw_data = dataframe.copy()
     raw_data["floor"] = fl
     raw_data["location"] = tp
     ssids = stats.getSSIDs(dataframe)
     chanLst = pStats.getChannels(dataframe)
-
     chanDict = dict(map(stats.getChannelDf, dataframe, chanLst))
     beacons = stats.getBeacons(dataframe)
     packet_types = ["mgmt", "data", "ctrl"]
     pTypeDict = dict(map(stats.getTypeFrames, dataframe, packet_types))
-
-    # try:
-    #     ssids = stats.getSSIDs(dataframe)
-    #     chanLst = pStats.getChannels(dataframe)
-    #     chanDict = dict(map(stats.getChannelDf, dataframe, chanLst))
-    #     beacons = stats.getBeacons(dataframe)
-    #     packet_types = ["mgmt", "data", "ctrl"]
-    #     pTypeDict = dict(map(stats.getTypeFrames, dataframe, packet_types))
-    #     print("")
-    #     print("")
-    # except:
-    #     dataframe["frame.time_relative"] = pd.to_numeric(dataframe["frame.time_relative"])
-    #     print(fl, tp)
-    #     print(dataframe["frame.time_relative"].dtype)
 
 
 def get_raw_dataframe_by_id(folder_path, level, tp):
@@ -200,17 +186,17 @@ def create_database(dbName):
 if __name__ == '__main__':
     output = sys.argv[2]
     sourceDir = sys.argv[1]
-    csv_dir = os.path.join(output, 'csv')
+    csvDir = os.path.join(output, 'csv')
     db_path = os.path.join(output, 'pcap_db.db')
 
     try:
-        os.mkdir(csv_dir)
+        os.mkdir(csvDir)
     except FileExistsError:
         pass
     try:
         create_database(db_path)
     except sqlite3.OperationalError:
         pass
-    PCAP_converter_dist(sourceDir, csv_dir)
-    csv_converter(csv_dir, output)
+    PCAP_converter_dist(sourceDir, csvDir)
+    csv_converter(csvDir, output)
     print("")
