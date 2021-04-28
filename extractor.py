@@ -11,7 +11,7 @@ cleaner = pCleaner()
 stats = pStats()
 
 
-def createSSIDData(dataframe):
+def cln_ssid_data(dataframe):
     data = dataframe[
         ["frame.time_delta",
             "frame.number",
@@ -21,28 +21,14 @@ def createSSIDData(dataframe):
             "radiotap.dbm_antsignal",
             "radiotap.dbm_antnoise",
             "wlan.fc.type",
-            "wlan.fc.type_subtype",
             "wlan_radio.data_rate",
             "wlan.fc.retry",
             "wlan.qbss.cu"]]
-    dtypes = {
-        "frame.time_delta": "float",
-        "frame.number": "int",
-        "wlan.fcs.status": "int",
-        "wlan.ssid": "str",
-        "wlan_radio.channel": "int",
-        "radiotap.dbm_antsignal": "int",
-        "radiotap.dbm_antnoise": "int",
-        "wlan.fc.type": "int",
-        "wlan.fc.type_subtype": "int",
-        "wlan_radio.data_rate": "int",
-        "wlan.fc.retry": "int",
-        "wlan.qbss.cu": "int"}
-    data = data.astype(dtypes)
+    # TODO: filter data and group by ssid
     return data
 
 
-def cleanDataframeData(dataframe):
+def cln_pkt_df_data(dataframe):
     data = dataframe[
         ["frame.number",
          "frame.time_delta",
@@ -50,37 +36,17 @@ def cleanDataframeData(dataframe):
          "wlan.fc.ds",
          "wlan.ta",
          "wlan.ra",
-         "radiotap.dbm_antsignal",
-         "radiotap.dbm_antnoise",
          "wlan_radio.data_rate",
          "data.len",
          "wlan_radio.duration",
          "wlan.fc.retry",
          "wlan.fcs.status"]]
-    dtypes = {"floor": "str",
-              "location": "str",
-              "frame.number": "int",
-              "wlan_radio.channel": 'int',
-              "wlan.fc.ds": "int16",
-              "wlan.ta": "str",
-              "wlan.ra": "str",
-              "radiotap.dbm_antsignal": "int",
-              "radiotap.dbm_antnoise": "int",
-              "wlan_radio.data_rate": "int",
-              "data.len": "int",
-              "wlan_radio.duration": "int",
-              "frame.time_delta": "float",
-              "wlan.fc.retry": "int",
-              "wlan.fcs.status": "int"}
-    data = data.astype(dtypes)
     return data
 
 # TODO: work out table entries for database
 #  ssids, channels, beacons, association, authentication
 
 # TODO: create channel df that contains rssi, noise, utilization
-
-
 
 def writeToDB(dataframe, parquet_store, fl, tp):
     raw_data = dataframe.copy()
@@ -128,8 +94,7 @@ def get_raw_dataframe_by_id(folder_path, level, tp):
                             error_bad_lines=False,
                             warn_bad_lines=False,
                             engine='python')
-
-    dataframe = cleaner.return_cleanDf(dataframe)
+    dataframe = cleaner.convert_types(dataframe)
     return dataframe
 
 
@@ -154,7 +119,8 @@ def csv_converter(csv_folder, par_dir):
             tp_dataframe, testpoint = get_merged_test_point(file)
             # write_raw_dataframe_to_parquet(tp_dataframe, par_dir, *testpoint)
             try:
-                write_raw_dataframe_to_parquet(tp_dataframe, par_dir, *testpoint)
+                pass
+                # write_raw_dataframe_to_parquet(tp_dataframe, par_dir, *testpoint)
             except ValueError:
                 continue
         print("")

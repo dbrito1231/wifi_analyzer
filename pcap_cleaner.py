@@ -3,7 +3,9 @@ import pandas as pd
 
 from numpy import isnan
 
+
 class pStats:
+
     def __init__(self):
         pass
 
@@ -34,14 +36,12 @@ class pStats:
         return good, bad
 
 
-
-
 class pCleaner:
 
     def __init__(self):
         pass
 
-    def return_cleanDf(self,dataframe):
+    def convert_types(self, dataframe):
         self.df = self.clean_subtype(dataframe)
         self.df = self.clean_type(self.df)
         self.df = self.clean_channel(self.df)
@@ -49,7 +49,30 @@ class pCleaner:
         self.df = self.clean_signal(self.df)
         self.df = self.clean_noise(self.df)
         self.df = self.clean_frame_len(self.df)
+        self.df.convert_dtypes()
+        self.df = self.clean_ds(self.df)
+        self.df = self.clean_retrys(self.df)
         return self.df
+
+    def clean_hex(self, val):
+        try:
+            return int(val, 16)
+        except TypeError:
+            pass
+
+    def clean_fcs_status(self, df):
+        df = df.query('`wlan.fcs.status` => 0 and `wlan.fcs.status` <= 1')
+        df["wlan.fcs.status"] = df["wlan.fcs.status"].astype("Int64")
+        return df
+
+    def clean_retrys(self, df):
+        df["wlan.fc.retry"] = df["wlan.fc.retry"].astype("Int64")
+        return df
+
+    def clean_ds(self, df):
+        df["wlan.fc.ds"] = df.apply(
+            lambda row: self.clean_ds(row["wlan.fc.ds"]), axis=1)
+        return df
 
     def convert_to_dBm(self, mw_array):
         dBm_array = 10 * np.log10(mw_array)
@@ -60,16 +83,14 @@ class pCleaner:
         return mWarray
 
     def clean_subtype(self, df):
-        numeric_subtype = pd.to_numeric(df['wlan.fc.type_subtype'],
+        df['wlan.fc.type_subtype'] = pd.to_numeric(df['wlan.fc.type_subtype'],
                                         errors='coerce').fillna(352).astype(int)
-        df['wlan.fc.type_subtype'] = numeric_subtype
         return df
 
     def clean_type(self, df):
         df = df[df['wlan.fc.type'].str.len() < 4]
-        numeric_subtype = pd.to_numeric(df['wlan.fc.type'],
+        df['wlan.fc.type'] = pd.to_numeric(df['wlan.fc.type'],
                                         errors='coerce').fillna(352).astype(int)
-        df['wlan.fc.type'] = numeric_subtype
         return df
 
     def clean_channel(self, df):
@@ -99,17 +120,11 @@ class pCleaner:
         df.dropna(subset=['frame.len'])
         return df
 
-    def clean_channel_bandwidth_below_40(self, df):
-        df = df[df['wlan.ht.info.chanwidth'].str.len() < 2]
-        df = df.astype({'wlan.ht.info.chanwidth': 'int'})
-        df = df[df['wlan.ht.info.chanwidth'] >= 0]
-        print('bandwidth under 40')
-        return df
-
-
     def add_dBm_conversion_to_mW(self, df):
         df['rssi(mW)'] = df['radiotap.dbm_antsignal'].apply(self.convert_to_mW)
         df['noise(mW)'] = df['radiotap.dbm_antnoise'].apply(self.convert_to_mW)
         return df
+
+
 
 

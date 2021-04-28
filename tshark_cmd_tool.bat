@@ -8,7 +8,6 @@ set Path_to_csv=%2
 fields ^
 -e frame.number ^
 -e frame.time ^
--e wlan.fcs ^
 -e wlan.fcs.status ^
 -e frame.time_relative ^
 -e wlan_radio.duration ^
