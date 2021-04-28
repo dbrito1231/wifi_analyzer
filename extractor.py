@@ -53,12 +53,12 @@ def writeToDB(dataframe, parquet_store, fl, tp):
     raw_data = dataframe.copy()
     raw_data["floor"] = fl
     raw_data["location"] = tp
-    ssids = stats.getSSIDs(dataframe)
-    chanLst = pStats.getChannels(dataframe)
-    chanDict = dict(map(stats.getChannelDf, dataframe, chanLst))
-    beacons = stats.getBeacons(dataframe)
+    ssids = stats.get_ssids(dataframe)
+    chanLst = pStats.get_chans(dataframe)
+    chanDict = dict(map(stats.get_ch_df, dataframe, chanLst))
+    beacons = stats.get_bcons(dataframe)
     packet_types = ["mgmt", "data", "ctrl"]
-    pTypeDict = dict(map(stats.getTypeFrames, dataframe, packet_types))
+    pTypeDict = dict(map(stats.get_type_frames, dataframe, packet_types))
 
 
 def get_raw_dataframe_by_id(folder_path, level, tp):
