@@ -76,10 +76,6 @@ class Transform:
         self.df.convert_dtypes()
         self.df = self.clean_ds(self.df)
         self.df = self.clean_retrys(self.df)
-        self.df = self.df.drop(columns=['wlan.qbss.scount', 'wlan.qbss.cu',
-                                        'wlan.cisco.ccx1.name', 'wlan.qos.priority',
-                                        'data.len', 'wlan.fc.ds', 'frame.len',
-                                        'data.len', 'wlan_radio.duration'])
         self.df.dropna(subset=['wlan.fcs.status'], inplace=True)
         self.df.rename(columns={'frame.number': 'frame_number',
                                 'frame.time': 'time',
