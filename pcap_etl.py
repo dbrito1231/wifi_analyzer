@@ -1,5 +1,6 @@
 import os
 from concurrent.futures import ProcessPoolExecutor
+from pg_connect import pg_admin
 from glob import glob
 from subprocess import Popen
 import numpy as np
@@ -183,3 +184,21 @@ class Transform:
         df['rssi(mW)'] = df['radiotap.dbm_antsignal'].apply(self.convert_to_mw)
         df['noise(mW)'] = df['radiotap.dbm_antnoise'].apply(self.convert_to_mw)
         return df
+
+
+class Load:
+
+    def __init__(self, save_dir):
+        self.save_dir = save_dir
+
+    @staticmethod
+    def return_query(filename):
+        data = f"{', '.join(str(val) for val in filename.itertuples(index=False))}"
+        return """INSERT INTO pcap VALUES f{data}"""
+
+    def save_file(self, dataframe, db):
+        filename = dataframe.file[0]
+        csv_file = f"{os.path.join(self.save_dir, filename)}.csv"
+        dataframe.to_csv(csv_file, index=False)
+        db.write(self.return_query(pd.read_csv(csv_file)))
+
