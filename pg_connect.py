@@ -16,10 +16,21 @@ class pg_admin:
     def write(self, query_string):
         cursor = self.conn.cursor()
         cursor.execute(query_string)
+        self.conn.commit()
+        cursor.close()
 
+    def query(self, query_string):
+        cursor = self.conn.cursor()
+        cursor.execute(query_string)
+        return cursor.fetchall()
 
-    # TODO: create table or update if exists
-    # TODO: add update data from csvs using copy
-    # TODO: create schema for tables
-    #  * use timestamp
+    def get_tables(self):
+        cursor = self.conn.cursor()
+        sql = """SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        ORDER BY table_name"""
+        cursor.execute(sql)
+        return cursor.fetchall()
+
 
