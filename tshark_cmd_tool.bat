@@ -20,5 +20,6 @@ fields ^
 -e wlan.fc.type ^
 -e wlan.fc.type_subtype ^
 -e wlan_radio.data_rate ^
+-e wlan.qbss.scount ^
 -e wlan.fc.retry ^
 -E header=y -E separator=, -E quote=d -E occurrence=f > %Path_to_csv%
