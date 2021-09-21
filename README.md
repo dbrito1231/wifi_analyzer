@@ -5,6 +5,7 @@ this program to work.
 
 ### Prerequisites
 * numpy v1.21.2
+* psycopg2
 * pandas v1.3.2
 * py4j v0.10.9
 * python-dateutil v2.8.2
