@@ -62,8 +62,10 @@ class Extract:
 
 class Transform:
 
+    # TODO: clean up corrupted ssids
+
     def mung(self, filename):
-        self.df = pd.read_csv(filename, error_bad_lines=False)
+        self.df = pd.read_csv(filename, error_bad_lines=False, encoding="utf-8")
         name = filename.split("\\")[-1].removesuffix('.csv')
         self.df.insert(2, "file", name, False)
         self.df = self.clean_frame_time(self.df)
@@ -73,9 +75,9 @@ class Transform:
         self.df = self.clean_counts(self.df)
         self.df = self.clean_signal(self.df)
         self.df = self.clean_noise(self.df)
-        self.df = self.clean_frame_len(self.df)
+        # self.df = self.clean_frame_len(self.df)
         self.df.convert_dtypes()
-        self.df = self.clean_ds(self.df)
+        # self.df = self.clean_ds(self.df)
         self.df = self.clean_retrys(self.df)
         self.df.dropna(subset=['wlan.fcs.status'], inplace=True)
         self.df.rename(columns={'frame.number': 'frame_number',
@@ -189,9 +191,6 @@ class Transform:
 
 class Load:
 
-    # TODO: add checker to verify table exists or not
-    #  if table exists, then it should update table
-    #  with filename and timestamp
     # TODO: test with postgres
 
     def __init__(self, save_dir):
@@ -203,7 +202,7 @@ class Load:
         return """INSERT INTO pcap VALUES f{data}"""
 
     def save_file(self, dataframe):
-        filename = dataframe.file[0]
+        filename = dataframe.file[1]
         csv_file = f"{os.path.join(self.save_dir, filename)}.csv"
         dataframe.to_csv(csv_file, index=False)
 
