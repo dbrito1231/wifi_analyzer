@@ -62,8 +62,6 @@ class Extract:
 
 class Transform:
 
-    # TODO: clean up corrupted ssids
-
     def mung(self, filename):
         self.df = pd.read_csv(filename, error_bad_lines=False, encoding="utf-8")
         name = filename.split("\\")[-1].removesuffix('.csv')
@@ -197,9 +195,9 @@ class Load:
         self.save_dir = save_dir
 
     @staticmethod
-    def create_query(dataframe):
+    def create_query(dataframe, table):
         data = f"{', '.join(str(val) for val in dataframe.itertuples(index=False))}"
-        return """INSERT INTO pcap VALUES f{data}"""
+        return f"INSERT INTO {table} VALUES {data}"
 
     def save_file(self, dataframe):
         filename = dataframe.file[1]
@@ -210,8 +208,10 @@ class Load:
         db = pg_admin(database_name, ("postgres", "aBcd@1234"))
         for file in glob(f"{self.save_dir}/*.csv"):
             df = pd.read_csv(file)
-            sql = self.create_query(df)
-            db.write(sql)
+            good_sql = self.create_query(df.query("fcs == 1"), "good_pkts")
+            bad_sql = self.create_query(df.query("fcs == 0"), "bad_pkts")
+            db.write(good_sql)
+            db.write(bad_sql)
 
 
 
