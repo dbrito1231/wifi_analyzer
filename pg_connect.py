@@ -1,5 +1,4 @@
 import psycopg2
-import pandas as pd
 
 
 class pg_admin:
@@ -12,6 +11,9 @@ class pg_admin:
             user=credentials[0],
             password=credentials[1]
         )
+
+    def close(self):
+        self.conn.close()
 
     def write(self, query_string):
         cursor = self.conn.cursor()
