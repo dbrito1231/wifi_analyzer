@@ -13,23 +13,24 @@ this program to work.
 * six v1.16.0
 
 ### Headers Used
-| Field | Description |
-| --- | --- |
-| frame.number | Sequential number of captured packet |
-| frame.time | Time of packet captured |
-| wlan.fcs.status | FCS status |
-| frame.time_relative | Relative time since first packet received |
-| frame.time_delta | Calculated time from previous packet |
-| wlan.ta | Transmit address |
-| wlan.ra | Receiving address |
-| wlan.ssid | SSID |
-| wlan_radio.channel | Channel |
-| radiotap.dbm_antsignal | Signal strength |
-| radiotap.dbm_antnoise | Noise |
-| wlan.fc.type | Type of packet
-| wlan.fc.type_subtype | Packet subtype |
-| wlan_radio.data_rate | Data rate
-| wlan.fc.retry | How many times it took to retry sending packet |
+| Field | Entry | Description |
+| --- | --- | --- |
+| frame.number | frame_number | Sequential number of captured packet |
+| frame.time | time | Time of packet captured |
+| wlan.fcs.status | fcs | FCS status |
+| frame.time_relative | relative_time | Relative time since first packet received |
+| frame.time_delta | timedelta | Calculated time from previous packet |
+| wlan.ta | transmit_address | Transmit address |
+| wlan.ra | receiving_address | Receiving address |
+| wlan.ssid | ssid | SSID |
+| wlan_radio.channel | channel | Channel |
+| radiotap.dbm_antsignal | rssi | Signal strength |
+| radiotap.dbm_antnoise | noise | Noise |
+| wlan.fc.type | fc_type | Type of packet
+| wlan.fc.type_subtype | fc_subtype | Packet subtype |
+| wlan_radio.data_rate | data_rate | Data rate |
+| wlan.qbss.scount | client_counts | Client counts |
+| wlan.fc.retry | retries | How many times it took to retry sending packet |
 
 ### Files
 * pcap_etl.py: Custom ETL built to transform pcap files into a database
