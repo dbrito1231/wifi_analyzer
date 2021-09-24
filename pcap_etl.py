@@ -65,7 +65,7 @@ class Transform:
     def mung(self, filename):
         self.df = pd.read_csv(filename, error_bad_lines=False, encoding="utf-8")
         name = filename.split("\\")[-1].removesuffix('.csv')
-        self.df.insert(2, "file", name, False)
+        self.df.insert(2, "filename", name, False)
         self.df = self.clean_frame_time(self.df)
         self.df = self.clean_subtype(self.df)
         self.df = self.clean_type(self.df)
@@ -204,14 +204,39 @@ class Load:
         csv_file = f"{os.path.join(self.save_dir, filename)}.csv"
         dataframe.to_csv(csv_file, index=False)
 
+    def create_table(self, db_obj):
+        commands = """
+        CREATE TABLE pcap (
+            frame_number INT PRIMARY KEY,
+            entry_date DATE NOT NULL,
+            time TIMESTAMP NOT NULL,
+            filename VARCHAR(100) NOT NULL,
+            fcs INT NOT NULL,
+            relative_time DECIMAL,
+            timedelta DECIMAL,
+            transmit_address VARCHAR(18),
+            receiving_address VARCHAR(18),
+            ssid VARCHAR(100),
+            channel INT,
+            rssi SMALLINT,
+            noise SMALLINT,
+            fc_type SMALLINT,
+            fc_subtype SMALLINT,
+            client_counts SMALLINT,
+            retries SMALLINT
+        )
+        """
+        db_obj.write(commands)
+
     def update_pg(self, database_name):
         db = pg_admin(database_name, ("postgres", "aBcd@1234"))
         for file in glob(f"{self.save_dir}/*.csv"):
             df = pd.read_csv(file)
-            good_sql = self.create_query(df.query("fcs == 1"), "good_pkts")
-            bad_sql = self.create_query(df.query("fcs == 0"), "bad_pkts")
+            good_sql = self.create_query(df.query("fcs == 1"), "Packet_Captures")
+            existing_tables = db.get_tables()
+            if "Packet_Captures" not in existing_tables:
+                self.create_table(db)
             db.write(good_sql)
-            db.write(bad_sql)
 
 
 
