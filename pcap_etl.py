@@ -213,7 +213,7 @@ class Load:
 
     def create_table(self, db_obj):
         commands = """
-        CREATE TABLE good_pkts (
+        CREATE TABLE IF NOT EXISTS good_pkts (
             id SERIAL PRIMARY KEY,
             frame_number INT NOT NULL,
             time TIMESTAMP NOT NULL,
