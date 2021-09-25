@@ -92,7 +92,7 @@ class Transform:
                                 'wlan_radio.data_rate': 'data_rate',
                                 'wlan.qbss.scount': 'client_counts',
                                 'wlan.fc.retry': 'retries'}, inplace=True)
-        self.df.fcs = self.df.fcs.astype('int32')
+        self.df = self.df.fillna(0)
         return self.df
 
     @staticmethod
@@ -116,7 +116,7 @@ class Transform:
     @staticmethod
     def clean_fcs_status(df):
         df = df.query('`wlan.fcs.status` => 0 and `wlan.fcs.status` <= 1')
-        df["wlan.fcs.status"] = df["wlan.fcs.status"].astype("Int64")
+        df["wlan.fcs.status"] = df["wlan.fcs.status"].astype("Int32")
         return df
 
     @staticmethod
@@ -188,7 +188,8 @@ class Transform:
 
 class Load:
 
-    # TODO: test with postgres
+    # TODO: test multiple files with postgres
+    # TODO: fix check for existing tables
 
     def __init__(self, save_dir):
         self.save_dir = save_dir
