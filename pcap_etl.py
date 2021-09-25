@@ -94,6 +94,7 @@ class Transform:
                                 'wlan_radio.data_rate': 'data_rate',
                                 'wlan.qbss.scount': 'client_counts',
                                 'wlan.fc.retry': 'retries'}, inplace=True)
+        self.df.fcs = self.df.fcs.astype('int32')
         return self.df
 
     @staticmethod
@@ -196,22 +197,30 @@ class Load:
 
     @staticmethod
     def create_query(dataframe, table):
-        data = f"{', '.join(str(val) for val in dataframe.itertuples(index=False))}"
-        return f"INSERT INTO {table} VALUES {data}"
+        if table == 'good_pkts':
+            columns = ["frame_number", "time",
+                       "filename", "fcs",
+                       "relative_time", "timedelta",
+                       "transmit_address", "receiving_address",
+                       "ssid, channel", "rssi", "noise",
+                       "fc_type", "fc_subtype", "data_rate",
+                       "client_counts", "retries"]
+        data = f"{', '.join(str(val) for val in dataframe.to_records(index=False))}"
+        return f"""INSERT INTO {table}({', '.join(str(val) for val in columns)}) VALUES {data}"""
 
     def save_file(self, dataframe):
-        filename = dataframe.file[1]
+        filename = dataframe.filename[1]
         csv_file = f"{os.path.join(self.save_dir, filename)}.csv"
         dataframe.to_csv(csv_file, index=False)
 
     def create_table(self, db_obj):
         commands = """
-        CREATE TABLE pcap (
-            frame_number INT PRIMARY KEY,
-            entry_date DATE NOT NULL,
+        CREATE TABLE good_pkts (
+            id SERIAL PRIMARY KEY,
+            frame_number INT NOT NULL,
             time TIMESTAMP NOT NULL,
             filename VARCHAR(100) NOT NULL,
-            fcs INT NOT NULL,
+            fcs INT,
             relative_time DECIMAL,
             timedelta DECIMAL,
             transmit_address VARCHAR(18),
@@ -222,6 +231,7 @@ class Load:
             noise SMALLINT,
             fc_type SMALLINT,
             fc_subtype SMALLINT,
+            data_rate FLOAT,
             client_counts SMALLINT,
             retries SMALLINT
         )
@@ -232,9 +242,9 @@ class Load:
         db = pg_admin(database_name, ("postgres", "aBcd@1234"))
         for file in glob(f"{self.save_dir}/*.csv"):
             df = pd.read_csv(file)
-            good_sql = self.create_query(df.query("fcs == 1"), "Packet_Captures")
+            good_sql = self.create_query(df.query("fcs == 1"), "good_pkts")
             existing_tables = db.get_tables()
-            if "Packet_Captures" not in existing_tables:
+            if "good_pkts" not in existing_tables:
                 self.create_table(db)
             db.write(good_sql)
 
