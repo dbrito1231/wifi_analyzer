@@ -14,4 +14,5 @@ if __name__ == '__main__':
     for file in glob.glob(r"C:\Users\domin\Desktop\github\wifi_analyzer\wifi_analyzer\csv\*.csv"):
         df = Transform().mung(file)
         loader.save_file(df)
+    loader.update_pg("pcap")
     print("")
