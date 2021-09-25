@@ -92,7 +92,7 @@ class Transform:
                                 'wlan_radio.data_rate': 'data_rate',
                                 'wlan.qbss.scount': 'client_counts',
                                 'wlan.fc.retry': 'retries'}, inplace=True)
-        self.df = self.df.fillna(0)
+        self.df = self.df.fillna(-10)
         return self.df
 
     @staticmethod
