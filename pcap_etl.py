@@ -73,9 +73,7 @@ class Transform:
         self.df = self.clean_counts(self.df)
         self.df = self.clean_signal(self.df)
         self.df = self.clean_noise(self.df)
-        # self.df = self.clean_frame_len(self.df)
         self.df.convert_dtypes()
-        # self.df = self.clean_ds(self.df)
         self.df = self.clean_retrys(self.df)
         self.df.dropna(subset=['wlan.fcs.status'], inplace=True)
         self.df.rename(columns={'frame.number': 'frame_number',
