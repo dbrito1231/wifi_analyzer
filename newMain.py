@@ -1,18 +1,20 @@
 import glob
 
 from pcap_etl import Transform, Extract, Load
+import sys
+import os
 import pandas as pd
 
 
-
 if __name__ == '__main__':
-    # Extract().convert_pcap(r"C:\Users\domin\Desktop\Folders\pcap_project\Post_Processing\sample",
-    #                          r"C:\Users\domin\Desktop\github\wifi_analyzer\wifi_analyzer\csv")
-    # processor = Transform()
-    # test = pd.read_csv(r"csv/ClubBowl_1_A.csv", error_bad_lines=False)
-    loader = Load(".")
-    for file in glob.glob(r"C:\Users\domin\Desktop\github\wifi_analyzer\wifi_analyzer\csv\*.csv"):
+    pcap_dir = sys.argv[1]
+    c_dir = sys.argv[2]
+    Extract().convert_pcap(pcap_dir,c_dir)
+    loader = Load(c_dir)
+    for file in glob.glob(fr"{c_dir}\*.csv"):
+        print(file)
         df = Transform().mung(file)
+        print(df)
         loader.save_file(df)
     loader.update_pg("pcap")
     print("")
