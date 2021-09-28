@@ -63,7 +63,7 @@ class Extract:
 class Transform:
 
     def mung(self, filename):
-        self.df = pd.read_csv(filename, error_bad_lines=False, encoding="utf-8")
+        self.df = pd.read_csv(filename, error_bad_lines=False)
         name = filename.split("\\")[-1].removesuffix('.csv')
         self.df.insert(2, "filename", name, False)
         self.df = self.clean_frame_time(self.df)
@@ -189,7 +189,6 @@ class Transform:
 class Load:
 
     # TODO: test multiple files with postgres
-    # TODO: fix check for existing tables
 
     def __init__(self, save_dir):
         self.save_dir = save_dir
