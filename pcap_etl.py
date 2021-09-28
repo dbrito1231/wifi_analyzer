@@ -189,6 +189,8 @@ class Transform:
 class Load:
 
     # TODO: test multiple files with postgres
+    # TODO: check current data in postgres to see if
+    #  invalid characters are being entered into db.
 
     def __init__(self, save_dir):
         self.save_dir = save_dir
