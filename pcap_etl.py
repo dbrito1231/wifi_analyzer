@@ -263,6 +263,7 @@ class Load:
             if "good_pkts" not in existing_tables:
                 self.create_table(db)
             db.write(good_sql)
+        db.close()
 
 
 
