@@ -66,6 +66,9 @@ class Transform:
         self.df = pd.read_csv(filename, error_bad_lines=False)
         name = filename.split("\\")[-1].removesuffix('.csv')
         self.df.insert(2, "filename", name, False)
+        self.df["wlan.ta"] = self.df["wlan.ta"].fillna(np.nan).replace([np.nan], ["None"])
+        self.df["wlan.ra"] = self.df["wlan.ra"].fillna(np.nan).replace([np.nan], ["None"])
+        self.df = self.clean_ssid(self.df)
         self.df = self.clean_frame_time(self.df)
         self.df = self.clean_subtype(self.df)
         self.df = self.clean_type(self.df)
@@ -92,7 +95,7 @@ class Transform:
                                 'wlan_radio.data_rate': 'data_rate',
                                 'wlan.qbss.scount': 'client_counts',
                                 'wlan.fc.retry': 'retries'}, inplace=True)
-        self.df = self.df.fillna(-10)
+        # self.df = self.df.fillna("None")
         return self.df
 
     @staticmethod
@@ -111,6 +114,12 @@ class Transform:
             lambda row: self.remove_dt_str(row['frame.time']), axis=1
         )
         df['frame.time'] = pd.to_datetime(df['frame.time'])
+        df['frame.time'] = df['frame.time'].fillna(0)
+        return df
+
+    @staticmethod
+    def clean_ssid(df):
+        df["wlan.ssid"] = df["wlan.ssid"].fillna("Hidden SSID")
         return df
 
     @staticmethod
@@ -153,8 +162,13 @@ class Transform:
 
     @staticmethod
     def clean_channel(df):
-        df = df.astype({'wlan_radio.channel': 'int'})
-        df = df.query('`wlan_radio.channel` >= 1')
+        try:
+            df = df.astype({'wlan_radio.channel': 'int32'})
+            df = df.query('`wlan_radio.channel` >= 1')
+        except ValueError:
+            for index, row in df.iterrows():
+                if isinstance(df.at[1,'wlan_radio.channel'], str):
+                    df.at[index, 'wlan_radio.channel'] = df[index, 'wlan_radio.channel'].strip(",").strip('"')
         return df
 
     @staticmethod
@@ -166,12 +180,14 @@ class Transform:
     @staticmethod
     def clean_signal(df):
         df = df.astype({'radiotap.dbm_antsignal': 'int'})
+        df['radiotap.dbm_antsignal'] = df['radiotap.dbm_antsignal'].fillna(0)
         df = df[df['radiotap.dbm_antsignal'] < -20]
         return df
 
     @staticmethod
     def clean_noise(df):
         df = df.astype({'radiotap.dbm_antnoise': 'int'})
+        df['radiotap.dbm_antnoise'] = df['radiotap.dbm_antnoise'].fillna(0)
         return df
 
     @staticmethod
