@@ -1,59 +1,52 @@
+"""
+    Name: PCAP ETL
+    Author: Damian Brito
+    Date: July 2021
+    Description: Consists of classes used to perform ETL on network
+                 packet capture files.
+
+    Modules:
+        os - used for filename inspection and creation
+        glob - used to find pcap and csv files in directory
+        subprocess.Popen - used to run tshark in command line
+        numpy - used to manipulate series in dataframe
+        pandas - used to convert pcap csv into dataframe
+        pg_connect.pg_admin = class used to connect and edit
+                             postgres database.
+"""
 import os
 from concurrent.futures import ProcessPoolExecutor
-from pg_connect import pg_admin
 from glob import glob
 from subprocess import Popen
 import numpy as np
 import pandas as pd
-
-
-class PcapStats:
-
-    @staticmethod
-    def get_chans(packet_dataframe):
-        channels = packet_dataframe['wlan_radio.channel'].unique()
-        unique_channels = [x for x in channels if (np.isnan(x) is not True)]
-        return unique_channels
-
-    @staticmethod
-    def get_ssid(dataframe):
-        return dataframe["wlan.ssid"].unique()
-
-    @staticmethod
-    def get_chan_df(dataframe, ch):
-        return dataframe.query(f'`wlan_radio.channel` == {ch}')
-
-    @staticmethod
-    def get_beacons(dataframe):
-        return dataframe.query('`wlan.fc.type_subtype` == "8"')
-
-    @staticmethod
-    def get_frame_types(dataframe, pkt_id):
-        types = {"mgmt": 0,
-                 "ctrl": 1,
-                 "data": 2}
-        return dataframe.query(f'`wlan.fc.type` == "{types[pkt_id]}"')
-
-    @staticmethod
-    def get_good_pkts(dataframe):
-        good = dataframe.query(f'`wlan.fcs.status` == "1"')
-        return good
-
-    @staticmethod
-    def get_bad_pkts(dataframe):
-        bad = dataframe.query(f'`wlan.fcs.status` == "0"')
-        return bad
+from pg_connect import pg_admin
 
 
 class Extract:
+    """
+    Used to extract pcap files and convert them into csv files.
+    """
 
     @staticmethod
     def tshark_tool(pcap_dir, csv_dir):
-        p = Popen(["tshark_cmd_tool.bat", pcap_dir, csv_dir])
-        stdout, stderr = p.communicate()
+        """
+        ;desc: used to convert pcap files into csv files using tshark and
+               windows cmd
+        :param pcap_dir: directory containing pcap files
+        :param csv_dir: directory containing csv files
+        :return: returns command line output and any errors thrown by tshark
+        """
+        process = Popen(["tshark_cmd_tool.bat", pcap_dir, csv_dir])
+        stdout, stderr = process.communicate()
         return stdout, stderr
 
     def convert_pcap(self, pcap_dir, csv_folder):
+        """
+        ;desc: used to convert pcap files into csv files using multiprocessing
+        :param pcap_dir: directory containing pcap files
+        :param csv_folder: directory containing csv files
+        """
         pcaps = glob(os.path.join(pcap_dir, '*.pcap'))
         csvs = [os.path.join(csv_folder, i.split('\\')[-1].replace('pcap', 'csv')) for i in pcaps]
         with ProcessPoolExecutor() as executor:
@@ -61,25 +54,36 @@ class Extract:
 
 
 class Transform:
+    """
+    Converts pcap csv files and performs data munging to dataframe.
+    """
 
     def mung(self, filename):
-        self.df = pd.read_csv(filename, error_bad_lines=False)
+        """
+        ;desc: takes in csv file and returns a cleaned dataframe.
+        :param filename: csv filename
+        :return: packet capture dataframe
+        """
+
+        self.dataframe = pd.read_csv(filename, error_bad_lines=False)
         name = filename.split("\\")[-1].removesuffix('.csv')
-        self.df.insert(2, "filename", name, False)
-        self.df["wlan.ta"] = self.df["wlan.ta"].fillna(np.nan).replace([np.nan], ["None"])
-        self.df["wlan.ra"] = self.df["wlan.ra"].fillna(np.nan).replace([np.nan], ["None"])
-        self.df = self.clean_ssid(self.df)
-        self.df = self.clean_frame_time(self.df)
-        self.df = self.clean_subtype(self.df)
-        self.df = self.clean_type(self.df)
-        self.df = self.clean_channel(self.df)
-        self.df = self.clean_counts(self.df)
-        self.df = self.clean_signal(self.df)
-        self.df = self.clean_noise(self.df)
-        self.df.convert_dtypes()
-        self.df = self.clean_retrys(self.df)
-        self.df.dropna(subset=['wlan.fcs.status'], inplace=True)
-        self.df.rename(columns={'frame.number': 'frame_number',
+        self.dataframe.insert(2, "filename", name, False)
+        self.dataframe["wlan.ta"] = self.clean_addr("wlan.ta")
+        self.dataframe["wlan.ra"] = self.clean_addr("wlan.ra")
+        # self.dataframe["wlan.ta"] = self.dataframe["wlan.ta"].fillna(np.nan).replace([np.nan], ["None"])
+        # self.dataframe["wlan.ra"] = self.dataframe["wlan.ra"].fillna(np.nan).replace([np.nan], ["None"])
+        self.dataframe = self.clean_ssid(self.dataframe)
+        self.dataframe = self.clean_frame_time(self.dataframe)
+        self.dataframe = self.clean_subtype(self.dataframe)
+        self.dataframe = self.clean_type(self.dataframe)
+        self.dataframe = self.clean_channel(self.dataframe)
+        self.dataframe = self.clean_counts(self.dataframe)
+        self.dataframe = self.clean_signal(self.dataframe)
+        self.dataframe = self.clean_noise(self.dataframe)
+        self.dataframe.convert_dtypes()
+        self.dataframe = self.clean_retrys(self.dataframe)
+        self.dataframe.dropna(subset=['wlan.fcs.status'], inplace=True)
+        self.dataframe.rename(columns={'frame.number': 'frame_number',
                                 'frame.time': 'time',
                                 'wlan.fcs.status': 'fcs',
                                 'frame.time_relative': 'relative_time',
@@ -90,16 +94,28 @@ class Transform:
                                 'wlan_radio.channel': 'channel',
                                 'radiotap.dbm_antsignal': 'rssi',
                                 'radiotap.dbm_antnoise': 'noise',
-                                'wlan.fc.type': 'fc_type',
-                                'wlan.fc.type_subtype': 'fc_subtype',
-                                'wlan_radio.data_rate': 'data_rate',
-                                'wlan.qbss.scount': 'client_counts',
-                                'wlan.fc.retry': 'retries'}, inplace=True)
-        # self.df = self.df.fillna("None")
-        return self.df
+                                       'wlan.fc.type': 'fc_type',
+                                       'wlan.fc.type_subtype': 'fc_subtype',
+                                       'wlan_radio.data_rate': 'data_rate',
+                                       'wlan.qbss.scount': 'client_counts',
+                                       'wlan.fc.retry': 'retries'}, inplace=True)
+        return self.dataframe
+
+    def clean_addr(self, address_type):
+        """
+        ;desc: removes any null bssid addresses and returns a clean column
+        :param address_type: column name [wlan.ta or wlan.ra]
+        :return: address series with no null values
+        """
+        return self.dataframe[f"{address_type}"].fillna(np.nan).replace([np.nan], ["None"])
 
     @staticmethod
     def clean_hex(val):
+        """
+        ;desc: takes in hexadecimal value and returns integer value.
+        :param val: hexadecimal value
+        :return: integer or none
+        """
         try:
             return int(val, 16)
         except TypeError:
@@ -107,36 +123,41 @@ class Transform:
 
     @staticmethod
     def remove_dt_str(item):
+        """
+        ;desc: converts pcap datetime string and returns date and time only
+        :param item: datetime string
+        :return: date and time
+        """
         return item.split('Eastern Daylight Time')[0]
 
-    def clean_frame_time(self, df):
-        df['frame.time'] = df.apply(
+    def clean_frame_time(self, dataframe):
+        dataframe['frame.time'] = dataframe.apply(
             lambda row: self.remove_dt_str(row['frame.time']), axis=1
         )
-        df['frame.time'] = pd.to_datetime(df['frame.time'])
-        df['frame.time'] = df['frame.time'].fillna(0)
-        return df
+        dataframe['frame.time'] = pd.to_datetime(dataframe['frame.time'])
+        dataframe['frame.time'] = dataframe['frame.time'].fillna(0)
+        return dataframe
 
     @staticmethod
-    def clean_ssid(df):
-        df["wlan.ssid"] = df["wlan.ssid"].fillna("Hidden SSID")
-        return df
+    def clean_ssid(dataframe):
+        dataframe["wlan.ssid"] = dataframe["wlan.ssid"].fillna("Hidden SSID")
+        return dataframe
 
     @staticmethod
-    def clean_fcs_status(df):
-        df = df.query('`wlan.fcs.status` => 0 and `wlan.fcs.status` <= 1')
-        df["wlan.fcs.status"] = df["wlan.fcs.status"].astype("Int32")
-        return df
+    def clean_fcs_status(dataframe):
+        dataframe = dataframe.query('`wlan.fcs.status` => 0 and `wlan.fcs.status` <= 1')
+        dataframe["wlan.fcs.status"] = dataframe["wlan.fcs.status"].astype("Int32")
+        return dataframe
 
     @staticmethod
-    def clean_retrys(df):
-        df["wlan.fc.retry"] = df["wlan.fc.retry"].astype("Int64")
-        return df
+    def clean_retrys(dataframe):
+        dataframe["wlan.fc.retry"] = dataframe["wlan.fc.retry"].astype("Int64")
+        return dataframe
 
-    def clean_ds(self, df):
-        df["wlan.fc.ds"] = df.apply(
+    def clean_ds(self, dataframe):
+        dataframe["wlan.fc.ds"] = dataframe.apply(
             lambda row: self.clean_hex(row["wlan.fc.ds"]), axis=1)
-        return df
+        return dataframe
 
     @staticmethod
     def convert_to_dbm(mw_array):
@@ -144,69 +165,68 @@ class Transform:
         return dbm_array
 
     @staticmethod
-    def convert_to_mw(self, dbm_array):
+    def convert_to_mw(dbm_array):
         mw_array = 10 ** (dbm_array / 10)
         return mw_array
 
     @staticmethod
-    def clean_subtype(df):
-        df['wlan.fc.type_subtype'] = pd.to_numeric(df['wlan.fc.type_subtype'],
+    def clean_subtype(dataframe):
+        dataframe['wlan.fc.type_subtype'] = pd.to_numeric(dataframe['wlan.fc.type_subtype'],
                                                    errors='coerce').fillna(352).astype(int)
-        return df
+        return dataframe
 
     @staticmethod
-    def clean_type(df):
-        df['wlan.fc.type'] = pd.to_numeric(df['wlan.fc.type'],
+    def clean_type(dataframe):
+        dataframe['wlan.fc.type'] = pd.to_numeric(dataframe['wlan.fc.type'],
                                            errors='coerce').fillna(352).astype(int)
-        return df
+        return dataframe
 
     @staticmethod
-    def clean_channel(df):
+    def clean_channel(dataframe):
         try:
-            df = df.astype({'wlan_radio.channel': 'int32'})
-            df = df.query('`wlan_radio.channel` >= 1')
+            dataframe = dataframe.astype({'wlan_radio.channel': 'int32'})
+            dataframe = dataframe.query('`wlan_radio.channel` >= 1')
         except ValueError:
-            for index, row in df.iterrows():
-                if isinstance(df.at[1,'wlan_radio.channel'], str):
-                    df.at[index, 'wlan_radio.channel'] = df[index, 'wlan_radio.channel'].strip(",").strip('"')
-        return df
+            for index, _ in dataframe.iterrows():
+                ch_col = 'wlan_radio.channel'
+                if isinstance(dataframe.at[1,'wlan_radio.channel'], str):
+                    dataframe.at[index,
+                                 ch_col] = dataframe[index,
+                                                     ch_col].strip(",").strip('"')
+        return dataframe
 
     @staticmethod
-    def clean_counts(df):
-        df['wlan.qbss.scount'] = df['wlan.qbss.scount'].fillna(0)
-        df = df.astype({'wlan.qbss.scount': 'int'})
-        return df
+    def clean_counts(dataframe):
+        dataframe['wlan.qbss.scount'] = dataframe['wlan.qbss.scount'].fillna(0)
+        dataframe = dataframe.astype({'wlan.qbss.scount': 'int'})
+        return dataframe
 
     @staticmethod
-    def clean_signal(df):
-        df = df.astype({'radiotap.dbm_antsignal': 'int'})
-        df['radiotap.dbm_antsignal'] = df['radiotap.dbm_antsignal'].fillna(0)
-        df = df[df['radiotap.dbm_antsignal'] < -20]
-        return df
+    def clean_signal(dataframe):
+        dataframe = dataframe.astype({'radiotap.dbm_antsignal': 'int'})
+        dataframe['radiotap.dbm_antsignal'] = dataframe['radiotap.dbm_antsignal'].fillna(0)
+        dataframe = dataframe[dataframe['radiotap.dbm_antsignal'] < -20]
+        return dataframe
 
     @staticmethod
-    def clean_noise(df):
-        df = df.astype({'radiotap.dbm_antnoise': 'int'})
-        df['radiotap.dbm_antnoise'] = df['radiotap.dbm_antnoise'].fillna(0)
-        return df
+    def clean_noise(dataframe):
+        dataframe = dataframe.astype({'radiotap.dbm_antnoise': 'int'})
+        dataframe['radiotap.dbm_antnoise'] = dataframe['radiotap.dbm_antnoise'].fillna(0)
+        return dataframe
 
     @staticmethod
-    def clean_frame_len(df):
-        df['frame.len'] = pd.to_numeric(df['frame.len'], errors='coerce')
-        df.dropna(subset=['frame.len'])
-        return df
+    def clean_frame_len(dataframe):
+        dataframe['frame.len'] = pd.to_numeric(dataframe['frame.len'], errors='coerce')
+        dataframe.dropna(subset=['frame.len'])
+        return dataframe
 
-    def dbm_to_mw(self, df):
-        df['rssi(mW)'] = df['radiotap.dbm_antsignal'].apply(self.convert_to_mw)
-        df['noise(mW)'] = df['radiotap.dbm_antnoise'].apply(self.convert_to_mw)
-        return df
+    def dbm_to_mw(self, dataframe):
+        dataframe['rssi(mW)'] = dataframe['radiotap.dbm_antsignal'].apply(self.convert_to_mw)
+        dataframe['noise(mW)'] = dataframe['radiotap.dbm_antnoise'].apply(self.convert_to_mw)
+        return dataframe
 
 
 class Load:
-
-    # TODO: test multiple files with postgres
-    # TODO: check current data in postgres to see if
-    #  invalid characters are being entered into db.
 
     def __init__(self, save_dir):
         self.save_dir = save_dir
@@ -229,7 +249,8 @@ class Load:
         csv_file = f"{os.path.join(self.save_dir, filename)}.csv"
         dataframe.to_csv(csv_file, index=False)
 
-    def create_table(self, db_obj):
+    @staticmethod
+    def create_table(db_obj):
         commands = """
         CREATE TABLE IF NOT EXISTS good_pkts (
             id SERIAL PRIMARY KEY,
@@ -255,16 +276,12 @@ class Load:
         db_obj.write(commands)
 
     def update_pg(self, database_name):
-        db = pg_admin(database_name, ("postgres", "aBcd@1234"))
+        db_conn = pg_admin(database_name, ("postgres", "aBcd@1234"))
         for file in glob(f"{self.save_dir}/*.csv"):
-            df = pd.read_csv(file)
-            good_sql = self.create_query(df.query("fcs == 1"), "good_pkts")
-            existing_tables = db.get_tables()
+            dataframe = pd.read_csv(file)
+            good_sql = self.create_query(dataframe.query("fcs == 1"), "good_pkts")
+            existing_tables = db_conn.get_tables()
             if "good_pkts" not in existing_tables:
-                self.create_table(db)
-            db.write(good_sql)
-        db.close()
-
-
-
-
+                self.create_table(db_conn)
+            db_conn.write(good_sql)
+        db_conn.close()
