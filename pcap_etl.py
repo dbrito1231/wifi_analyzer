@@ -1,8 +1,8 @@
 """
-    Name: PCAP ETL
+    Name: WiFi PCAP ETL
     Author: Damian Brito
     Date: July 2021
-    Description: Consists of classes used to perform ETL on network
+    Description: Consists of classes used to perform ETL on WiFi
                  packet capture files.
 
     Modules:
@@ -20,7 +20,7 @@ from glob import glob
 from subprocess import Popen
 import numpy as np
 import pandas as pd
-from pg_connect import pg_admin
+from pg_connect import PgAdmin
 
 
 class Extract:
@@ -412,7 +412,7 @@ class Load:
         :param database_name: name of database to insert pcap table.
         :return: None
         """
-        db_conn = pg_admin(database_name, ("postgres", "aBcd@1234"))
+        db_conn = PgAdmin(database_name, ("postgres", "aBcd@1234"))
         for file in glob(f"{self.save_dir}/*.csv"):
             dataframe = pd.read_csv(file)
             good_sql = self.create_query(dataframe.query("fcs == 1"), "good_pkts")
