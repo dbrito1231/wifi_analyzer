@@ -27,6 +27,8 @@ class Extract:
     """
     Used to extract pcap files and convert them into csv files.
     """
+    def __init__(self):
+        pass
 
     @staticmethod
     def tshark_tool(pcap_dir, csv_dir):
@@ -60,6 +62,25 @@ class Transform:
     Converts pcap csv files and performs data munging to dataframe.
     """
 
+    def __init__(self):
+        self.dataframe = None
+        self.columns = {'frame.number': 'frame_number',
+                        'frame.time': 'time',
+                        'wlan.fcs.status': 'fcs',
+                        'frame.time_relative': 'relative_time',
+                        'frame.time_delta': 'timedelta',
+                        'wlan.ta': 'transmit_address',
+                        'wlan.ra': 'receiving_address',
+                        'wlan.ssid': 'ssid',
+                        'wlan_radio.channel': 'channel',
+                        'radiotap.dbm_antsignal': 'rssi',
+                        'radiotap.dbm_antnoise': 'noise',
+                        'wlan.fc.type': 'fc_type',
+                        'wlan.fc.type_subtype': 'fc_subtype',
+                        'wlan_radio.data_rate': 'data_rate',
+                        'wlan.qbss.scount': 'client_counts',
+                        'wlan.fc.retry': 'retries'}
+
     def mung(self, filename):
         """
         Takes in csv file and returns a cleaned dataframe.
@@ -67,14 +88,11 @@ class Transform:
         :param filename: csv filename
         :return: packet capture dataframe
         """
-
         self.dataframe = pd.read_csv(filename, error_bad_lines=False)
         name = filename.split("\\")[-1].removesuffix('.csv')
         self.dataframe.insert(2, "filename", name, False)
         self.dataframe["wlan.ta"] = self.clean_addr("wlan.ta")
         self.dataframe["wlan.ra"] = self.clean_addr("wlan.ra")
-        # self.dataframe["wlan.ta"] = self.dataframe["wlan.ta"].fillna(np.nan).replace([np.nan], ["None"])
-        # self.dataframe["wlan.ra"] = self.dataframe["wlan.ra"].fillna(np.nan).replace([np.nan], ["None"])
         self.dataframe = self.clean_ssid(self.dataframe)
         self.dataframe = self.clean_frame_time(self.dataframe)
         self.dataframe = self.clean_subtype(self.dataframe)
@@ -86,22 +104,7 @@ class Transform:
         self.dataframe.convert_dtypes()
         self.dataframe = self.clean_retrys(self.dataframe)
         self.dataframe.dropna(subset=['wlan.fcs.status'], inplace=True)
-        self.dataframe.rename(columns={'frame.number': 'frame_number',
-                                'frame.time': 'time',
-                                'wlan.fcs.status': 'fcs',
-                                'frame.time_relative': 'relative_time',
-                                'frame.time_delta': 'timedelta',
-                                'wlan.ta': 'transmit_address',
-                                'wlan.ra': 'receiving_address',
-                                'wlan.ssid': 'ssid',
-                                'wlan_radio.channel': 'channel',
-                                'radiotap.dbm_antsignal': 'rssi',
-                                'radiotap.dbm_antnoise': 'noise',
-                                       'wlan.fc.type': 'fc_type',
-                                       'wlan.fc.type_subtype': 'fc_subtype',
-                                       'wlan_radio.data_rate': 'data_rate',
-                                       'wlan.qbss.scount': 'client_counts',
-                                       'wlan.fc.retry': 'retries'}, inplace=True)
+        self.dataframe.rename(columns=self.columns, inplace=True)
         return self.dataframe
 
     def clean_addr(self, address_type):
@@ -240,7 +243,7 @@ class Transform:
         :return: dataframe with clean fc type series
         """
         dataframe['wlan.fc.type'] = pd.to_numeric(dataframe['wlan.fc.type'],
-                                           errors='coerce').fillna(352).astype(int)
+                                                  errors='coerce').fillna(352).astype(int)
         return dataframe
 
     @staticmethod
@@ -257,7 +260,7 @@ class Transform:
         except ValueError:
             for index, _ in dataframe.iterrows():
                 ch_col = 'wlan_radio.channel'
-                if isinstance(dataframe.at[1,'wlan_radio.channel'], str):
+                if isinstance(dataframe.at[1, 'wlan_radio.channel'], str):
                     dataframe.at[index,
                                  ch_col] = dataframe[index,
                                                      ch_col].strip(",").strip('"')
