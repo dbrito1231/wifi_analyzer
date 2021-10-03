@@ -38,3 +38,5 @@ this program to work.
       * Extract - used to transform pcap data into csv files.
       * Transform - Loads csv files for data munging.
       * Load - Writes data into PostgreSQL formats.
+* pg_connect.py: PostgresSQL database adapter class
+* main.py: used to run script or can be used to test pcap_etl and pg_connect.
