@@ -15,7 +15,7 @@
 
 """
 import glob
-import time
+from datetime import datetime
 import sys
 from pcap_etl import Transform, Extract, Load
 
@@ -38,31 +38,31 @@ if __name__ == '__main__':
 
     # runs and measures extracting pcap to csv files
     # using Extract instance
-    start_time = time.time()
-    extractor.convert_pcap(pcap_dir, c_dir)
-    end_time = time.time()
+    start_time = datetime.now()
     print(f"\nExtractor start time: {start_time}")
+    extractor.convert_pcap(pcap_dir, c_dir)
+    end_time = datetime.now()
     print(f"Extractor end time: {end_time}")
-    print(f"duration: {(end_time - start_time) / 60}")
+    print(f"duration: {(end_time - start_time)}")
 
     # runs and measures pcap data munging using Transform
     # and Load instances
-    start_time = time.time()
+    start_time = datetime.now()
+    print(f"\nTransform start time: {start_time}")
     for file in glob.glob(fr"{c_dir}\*.csv"):
         df = transform.mung(file)
         loader.save_file(df)
-    end_time = time.time()
-    print(f"\nTransform start time: {start_time}")
+    end_time = datetime.now()
     print(f"Transform end time: {end_time}")
-    print(f"duration: {(end_time - start_time) / 60}")
+    print(f"duration: {(end_time - start_time)}")
 
     # runs and measures pcap dataframes into postgreSQL
     # database
-    start_time = time.time()
-    loader.update_pg("pcap")
-    end_time = time.time()
+    start_time = datetime.now()
     print(f"\nLoad start time: {start_time}")
+    loader.update_pg("pcap")
+    end_time = datetime.now()
     print(f"Load end time: {end_time}")
-    print(f"duration: {(end_time - start_time) / 60}")
-
+    print(f"duration: {(end_time - start_time)}")
     print("completed")
+    sys.exit(1)
