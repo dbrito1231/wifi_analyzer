@@ -88,7 +88,7 @@ class Transform:
         :param filename: csv filename
         :return: packet capture dataframe
         """
-        self.dataframe = pd.read_csv(filename, error_bad_lines=False)
+        self.dataframe = pd.read_csv(filename, error_bad_lines=False).query("`wlan.fcs.status` == 1")
         name = filename.split("\\")[-1].removesuffix('.csv')
         self.dataframe.insert(2, "filename", name, False)
         self.dataframe["wlan.ta"] = self.clean_addr("wlan.ta")
@@ -105,7 +105,7 @@ class Transform:
         self.dataframe = self.clean_retrys(self.dataframe)
         self.dataframe.dropna(subset=['wlan.fcs.status'], inplace=True)
         self.dataframe.rename(columns=self.columns, inplace=True)
-        return self.dataframe
+        return self.dataframe.reset_index(drop=True)
 
     def clean_addr(self, address_type):
         """
@@ -254,16 +254,8 @@ class Transform:
         :param dataframe: pcap dataframe
         :return: dataframe with clean channel series
         """
-        try:
-            dataframe = dataframe.astype({'wlan_radio.channel': 'int32'})
-            dataframe = dataframe.query('`wlan_radio.channel` >= 1')
-        except ValueError:
-            for index, _ in dataframe.iterrows():
-                ch_col = 'wlan_radio.channel'
-                if isinstance(dataframe.at[1, 'wlan_radio.channel'], str):
-                    dataframe.at[index,
-                                 ch_col] = dataframe[index,
-                                                     ch_col].strip(",").strip('"')
+        dataframe = dataframe.astype({'wlan_radio.channel': 'int32'})
+        dataframe = dataframe.query('`wlan_radio.channel` >= 1')
         return dataframe
 
     @staticmethod
@@ -394,13 +386,13 @@ class Load:
             receiving_address VARCHAR(18),
             ssid VARCHAR(100),
             channel INT,
-            rssi SMALLINT,
-            noise SMALLINT,
-            fc_type SMALLINT,
-            fc_subtype SMALLINT,
+            rssi INT,
+            noise INT,
+            fc_type INT,
+            fc_subtype INT,
             data_rate FLOAT,
-            client_counts SMALLINT,
-            retries SMALLINT
+            client_counts INT,
+            retries INT
         )
         """
         db_obj.write(commands)
@@ -415,7 +407,7 @@ class Load:
         db_conn = PgAdmin(database_name, ("postgres", "aBcd@1234"))
         for file in glob(f"{self.save_dir}/*.csv"):
             dataframe = pd.read_csv(file)
-            good_sql = self.create_query(dataframe.query("fcs == 1"), "good_pkts")
+            good_sql = self.create_query(dataframe, "good_pkts")
             existing_tables = db_conn.get_tables()
             if "good_pkts" not in existing_tables:
                 self.create_table(db_conn)
