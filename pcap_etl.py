@@ -88,7 +88,9 @@ class Transform:
         :param filename: csv filename
         :return: packet capture dataframe
         """
-        self.dataframe = pd.read_csv(filename, error_bad_lines=False).query("`wlan.fcs.status` == 1")
+        self.dataframe = pd.read_csv(filename,
+                                     error_bad_lines=False,
+                                     warn_bad_lines=False).query("`wlan.fcs.status` == 1")
         name = filename.split("\\")[-1].removesuffix('.csv')
         self.dataframe.insert(2, "filename", name, False)
         self.dataframe["wlan.ta"] = self.clean_addr("wlan.ta")
@@ -397,16 +399,20 @@ class Load:
         """
         db_obj.write(commands)
 
-    def update_pg(self, database_name):
+    def update_pg(self, database_name, db_user, db_passw):
         """
         Connects and writes pcap data into postgreSQL database.
 
+        :param db_passw: database password
+        :param db_user: database username
         :param database_name: name of database to insert pcap table.
         :return: None
         """
-        db_conn = PgAdmin(database_name, ("postgres", "aBcd@1234"))
+        db_conn = PgAdmin(database_name, (db_user, db_passw))
         for file in glob(f"{self.save_dir}/*.csv"):
+            print(file)
             dataframe = pd.read_csv(file)
+            print(dataframe.head(5))
             good_sql = self.create_query(dataframe, "good_pkts")
             existing_tables = db_conn.get_tables()
             if "good_pkts" not in existing_tables:
