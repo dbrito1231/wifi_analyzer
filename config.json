@@ -1,0 +1,7 @@
+{
+  "PCAP_DIR": "ENTER\\FILEPATH\\HERE",
+  "CSV_DIR": "ENTER\\CSV\\DIRECTORY\\HERE",
+  "DATABASE": "Enter database name here",
+  "DB_USER": "Enter database username",
+  "DB_PASSW": "Enter database password"
+}
