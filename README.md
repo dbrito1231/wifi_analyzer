@@ -1,4 +1,4 @@
-# WiFi PCAP ETL
+# WiFETL
 This project serves to process WiFi packet capture files into a database for data analysis. Packet captures
 must be captured using promiscuous mode on network adapters to collect necessary headers for 
 this program to work.
@@ -11,6 +11,9 @@ this program to work.
 * python-dateutil v2.8.2
 * pytz v2021.1
 * six v1.16.0
+* PostgreSQL installed
+* Windows PC (Linux coming soon!)
+* Wireshark installed (3.4+)
 
 ### Headers Used
 | Field | Entry | Description |
@@ -40,3 +43,27 @@ this program to work.
       * Load - Writes data into PostgreSQL formats.
 * pg_connect.py: PostgresSQL database adapter class
 * main.py: used to run script or can be used to test pcap_etl and pg_connect.
+* config.json: used to pass in parameters into script.
+
+### Config.json file
+```json
+{
+  "PCAP_DIR": "PCAP directory",
+  "CSV_DIR": "Directory to save converted packet capture files",
+  "DATABASE": "Database name",
+  "DB_USER": "Database username",
+  "DB_PASSW": "Database password"
+}
+```
+
+### Running the script
+```
+> main.py config.json
+```
+
+### Steps
+1. Download or clone WiFETL onto a Windows based computer.
+2. Create virtualenv and install modules from requirements.txt.
+3. Update config.json with required directories and credentials.
+4. Run script
+5. Once completed, check PostgreSQL to verify packets table is designated database.
