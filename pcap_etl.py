@@ -345,14 +345,13 @@ class Load:
         :param table: name of table to insert data
         :return: postgreSQL query with dataframe data as string.
         """
-        if table == 'good_pkts':
-            columns = ["frame_number", "time",
-                       "filename", "fcs",
-                       "relative_time", "timedelta",
-                       "transmit_address", "receiving_address",
-                       "ssid, channel", "rssi", "noise",
-                       "fc_type", "fc_subtype", "data_rate",
-                       "client_counts", "retries"]
+        columns = ["frame_number", "time",
+                   "filename", "fcs",
+                   "relative_time", "timedelta",
+                   "transmit_address", "receiving_address",
+                   "ssid, channel", "rssi", "noise",
+                   "fc_type", "fc_subtype", "data_rate",
+                   "client_counts", "retries"]
         data = f"{', '.join(str(val) for val in dataframe.to_records(index=False))}"
         return f"""INSERT INTO {table}({', '.join(str(val) for val in columns)}) VALUES {data}"""
 
@@ -376,7 +375,7 @@ class Load:
         :return: None
         """
         commands = """
-        CREATE TABLE IF NOT EXISTS good_pkts (
+        CREATE TABLE IF NOT EXISTS packets (
             id SERIAL PRIMARY KEY,
             frame_number INT NOT NULL,
             time TIMESTAMP NOT NULL,
