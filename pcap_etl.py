@@ -413,9 +413,9 @@ class Load:
             print(file)
             dataframe = pd.read_csv(file)
             print(dataframe.head(5))
-            good_sql = self.create_query(dataframe, "good_pkts")
+            good_sql = self.create_query(dataframe, "packets")
             existing_tables = db_conn.get_tables()
-            if "good_pkts" not in existing_tables:
+            if "packets" not in existing_tables:
                 self.create_table(db_conn)
             db_conn.write(good_sql)
         db_conn.close()
